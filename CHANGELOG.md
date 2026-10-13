@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 (2026-10-13)
+
+- CI: harden workflows (actions pinned to SHAs, least-privilege permissions, persist-credentials: false)
+
 ## 1.0.0 (2026-10-13)
 
 First release.
