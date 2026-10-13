@@ -1,0 +1,5 @@
+@import "reset.css";
+body { background: url(../img/bg.png) no-repeat; }
+.logo { background-image: url("/img/logo.png"); }
+/* url(/commented.png) */
+.x { background: url(data:image/png;base64,AAAA); }

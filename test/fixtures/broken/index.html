@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Home</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="canonical" href="https://mysite.com/">
+  <link rel="alternate" hreflang="fr" href="/fr/">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <meta property="og:image" content="/og.png">
+  <script src="/assets/app.js"></script>
+  <script src="http://cdn.example.com/lib.js"></script>
+  <style>.hero { background: url('/img/hero.jpg'); }</style>
+</head>
+<body>
+  <!-- <a href="/commented-out">ignored</a> -->
+  <nav>
+    <a href="/about">About</a>
+    <a href="/blog/post-l/">Typo post</a>
+    <a href="/Blog/Post-1/">Case post</a>
+    <a href="/about#team">Team</a>
+    <a href="/about#nope">Missing anchor</a>
+    <a href="#local">Local</a>
+    <a href="#missing-local">Missing local</a>
+    <a href="/old-blog/post-1/">Old blog (redirect)</a>
+    <a href="/docs">Docs (external redirect)</a>
+    <a href="mailto:hi@example.com">Mail</a>
+    <a href="http://example.com/">Insecure</a>
+    <a href="https://mysite.com/about">Absolute own domain</a>
+  </nav>
+  <section id="local">
+    <img src="/img/Logo.png" alt="">
+    <img src="/img/a.png" srcset="/img/a.png 1x, /img/b.png 2x" alt="">
+    <video src="/media/intro.mp4" poster="/img/a.png"></video>
+    <iframe src="/embed.html"></iframe>
+    <object data="/doc.pdf"></object>
+    <form action="/api/contact" method="post"></form>
+    <script>document.write('<a href="/not-a-real-link">');</script>
+  </section>
+</body>
+</html>

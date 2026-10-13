@@ -1,0 +1,51 @@
+name: 'static-link-sentinel'
+description: 'Fail CI on broken internal links, missing assets and dead external links in a static build'
+author: 'Louis Wright'
+branding: { icon: 'link', color: 'orange' }
+inputs:
+  dir: { description: 'Build directory (default: auto-detect dist/build/out/public/_site)', default: '' }
+  external: { description: 'Also check external links (true/false)', default: 'false' }
+  site-url: { description: 'Production URL, e.g. https://example.com', default: '' }
+  base-path: { description: 'Sub-path the site is served under, e.g. /docs', default: '' }
+  fail-on: { description: 'error | warn | none', default: 'error' }
+  config: { description: 'Path to JSON config file', default: '' }
+  sarif: { description: 'Write SARIF to this path (upload with github/codeql-action/upload-sarif)', default: '' }
+  job-summary: { description: 'Write the Markdown report to the job summary (true/false)', default: 'true' }
+  args: { description: 'Extra CLI arguments, e.g. "--orphans --trailing-slash always"', default: '' }
+outputs:
+  markdown-file: { description: 'Path of the Markdown report', value: '${{ steps.run.outputs.markdown-file }}' }
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-node@v4
+      with: { node-version: '20' }
+    - id: run
+      shell: bash
+      env:
+        SLS_DIR: ${{ inputs.dir }}
+        SLS_EXTERNAL: ${{ inputs.external }}
+        SLS_SITE_URL: ${{ inputs.site-url }}
+        SLS_BASE_PATH: ${{ inputs.base-path }}
+        SLS_FAIL_ON: ${{ inputs.fail-on }}
+        SLS_CONFIG: ${{ inputs.config }}
+        SLS_SARIF: ${{ inputs.sarif }}
+        SLS_SUMMARY: ${{ inputs.job-summary }}
+        SLS_ARGS: ${{ inputs.args }}
+        FORCE_COLOR: '1'
+      run: |
+        md="$RUNNER_TEMP/static-link-sentinel.md"
+        args=(--fail-on "$SLS_FAIL_ON" --markdown "$md")
+        [ -n "$SLS_DIR" ] && args=("$SLS_DIR" "${args[@]}")
+        [ "$SLS_EXTERNAL" = "true" ] && args+=(--external)
+        [ -n "$SLS_SITE_URL" ] && args+=(--site-url "$SLS_SITE_URL")
+        [ -n "$SLS_BASE_PATH" ] && args+=(--base-path "$SLS_BASE_PATH")
+        [ -n "$SLS_CONFIG" ] && args+=(--config "$SLS_CONFIG")
+        [ -n "$SLS_SARIF" ] && args+=(--sarif "$SLS_SARIF")
+        set +e
+        # shellcheck disable=SC2086
+        node "${{ github.action_path }}/bin/static-link-sentinel.js" "${args[@]}" $SLS_ARGS
+        code=$?
+        set -e
+        echo "markdown-file=$md" >> "$GITHUB_OUTPUT"
+        if [ "$SLS_SUMMARY" = "true" ] && [ -f "$md" ]; then cat "$md" >> "$GITHUB_STEP_SUMMARY"; fi
+        exit $code

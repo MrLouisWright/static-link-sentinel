@@ -1,0 +1,8 @@
+{
+  "name": "Demo",
+  "start_url": "/",
+  "icons": [
+    { "src": "/img/logo.png", "sizes": "32x32" },
+    { "src": "/icon-192.png", "sizes": "192x192" }
+  ]
+}

@@ -1,0 +1,2 @@
+/old-blog/*  /blog/:splat  301
+/docs  https://docs.example.com  301
