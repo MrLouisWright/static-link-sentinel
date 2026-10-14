@@ -1,13 +1,14 @@
 import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
-import { parseHtml, parseCss, parseSitemap, parseRobots, lineIndex } from './parse.js';
+import { parseHtml, parseCss, parseSitemap, parseRobots, lineIndex, parseMarkdown } from './parse.js';
+import { scanMarkdownSources, listSourceFiles, resolveMarkdownTarget, DEFAULT_SOURCE_PATTERNS, slugifyHeading } from './sources.js';
 import { walk, Site, parseNetlifyRedirects, parseVercelConfig, normalizeBase, levenshtein, compilePattern } from './site.js';
 import { checkExternal, classifyExternal, DEFAULT_SKIP, DEFAULT_USER_AGENT } from './external.js';
 import { RULES } from './rules.js';
 import { toMatcher, loadConfig } from './config.js';
 import { pretty, toMarkdown, toSarif, toJson } from './format.js';
 
-export { RULES, pretty, toMarkdown, toSarif, toJson, loadConfig, Site, walk, parseHtml, parseCss, parseSitemap, parseRobots, checkExternal, classifyExternal, levenshtein, compilePattern, parseNetlifyRedirects, parseVercelConfig };
+export { RULES, pretty, toMarkdown, toSarif, toJson, loadConfig, Site, walk, parseHtml, parseCss, parseSitemap, parseRobots, parseMarkdown, checkExternal, classifyExternal, levenshtein, compilePattern, parseNetlifyRedirects, parseVercelConfig, listSourceFiles, DEFAULT_SOURCE_PATTERNS, slugifyHeading };
 
 export const BUILD_DIRS = ['dist', 'build', 'out', 'public', '_site'];
 const ORIGIN = 'http://static-link-sentinel.invalid';
@@ -31,24 +32,36 @@ async function pool(items, n, fn) {
 async function readJson(p) { try { return JSON.parse(await fs.readFile(p, 'utf8')); } catch { return null; } }
 
 /**
- * Check a static build directory.
+ * Check a static build directory and/or markdown sources.
  * @param {import('./index.js').CheckOptions} options
+ * @param {boolean|string[]} [options.sources] When true, scan all .md and .mdx files under cwd (default globs). Or pass globs / file paths. Build dir is optional if only sources are checked.
  */
 export async function check(options = {}) {
   const o = { ...options };
-  const dir = o.dir ?? detectDir(o.cwd);
-  if (!dir) throw Object.assign(new Error(`No build directory found (looked for ${BUILD_DIRS.join(', ')}). Pass one explicitly.`), { usage: true });
-  const root = path.resolve(o.cwd || process.cwd(), dir);
-  const st = await fs.stat(root).catch(() => null);
-  if (!st?.isDirectory()) throw Object.assign(new Error(`Not a directory: ${dir}`), { usage: true });
-
-  const files = await walk(root);
+  const dir = o.dir ?? (o.sources ? null : detectDir(o.cwd));
+  if (!dir && !o.sources) throw Object.assign(new Error(`No build directory found (looked for ${BUILD_DIRS.join(', ')}). Pass one explicitly or use --sources.`), { usage: true });
+  const srcCwd = path.resolve(o.cwd || process.cwd());
+  let root = null;
+  let files = [];
+  if (dir) {
+    root = path.resolve(srcCwd, dir);
+    const st = await fs.stat(root).catch(() => null);
+    if (!st?.isDirectory()) throw Object.assign(new Error(`Not a directory: ${dir}`), { usage: true });
+    files = await walk(root);
+  }
   const rules = [];
-  try { rules.push(...parseNetlifyRedirects(await fs.readFile(path.join(root, '_redirects'), 'utf8'))); } catch {}
+  if (root) {
+    try { rules.push(...parseNetlifyRedirects(await fs.readFile(path.join(root, '_redirects'), 'utf8'))); } catch {}
+  }
   let vercel = null;
-  for (const p of [o.vercelConfig, path.join(root, 'vercel.json'), path.join(path.dirname(root), 'vercel.json')].filter(Boolean)) {
-    const j = await readJson(p);
-    if (j) { vercel = parseVercelConfig(j, path.relative(process.cwd(), p) || 'vercel.json'); break; }
+  if (root) {
+    for (const p of [o.vercelConfig, path.join(root, 'vercel.json'), path.join(path.dirname(root), 'vercel.json')].filter(Boolean)) {
+      const j = await readJson(p);
+      if (j) { vercel = parseVercelConfig(j, path.relative(process.cwd(), p) || 'vercel.json'); break; }
+    }
+  } else if (o.vercelConfig) {
+    const j = await readJson(o.vercelConfig);
+    if (j) vercel = parseVercelConfig(j, path.relative(process.cwd(), o.vercelConfig) || 'vercel.json');
   }
   if (vercel) rules.push(...vercel.rules);
   for (const r of o.redirects || []) { const c = compilePattern(r.from || r.source); if (c) rules.push({ ...c, from: r.from || r.source, to: r.to || r.destination, status: r.status || 301, type: 'redirect', file: 'config' }); }
@@ -90,17 +103,53 @@ export async function check(options = {}) {
   const inbound = new Set();
   const manifests = new Set(files.filter((f) => /\.webmanifest$/i.test(f)));
   const external = new Map();
-  const stats = { files: files.length, pages: htmlFiles.length, css: cssFiles.length, internal: 0, external: 0, externalChecked: 0, cached: 0 };
+  const stats = { files: files.length, pages: htmlFiles.length, css: cssFiles.length, markdown: 0, internal: 0, external: 0, externalChecked: 0, cached: 0 };
+  const sourceFiles = new Set();
+  const mdHeadings = new Map();
+  if (o.sources) {
+    for (const f of await listSourceFiles(srcCwd, o.sources === true ? true : o.sources)) sourceFiles.add(f);
+  }
   const isIgnored = (raw, u) => ignore.some((m) => m.test(raw) || (u && (m.test(u.href.replace(ORIGIN, '')) || m.test(u.pathname) || m.test(u.href))));
   const display = (u) => (u.origin === ORIGIN ? u.pathname + u.search + u.hash : u.href);
+
+  function mdFragmentCheck(targetFile, hash, loc, what) {
+    if (!hash || hash.length <= 1 || hash.startsWith('#:~:')) return;
+    let id = hash.slice(1);
+    try { id = decodeURIComponent(id); } catch {}
+    const heads = mdHeadings.get(targetFile);
+    if (!heads || heads.has(id) || heads.has(slugifyHeading(id))) return;
+    add({ ruleId: 'missing-fragment', ...loc, message: `${what}: no heading for #${id} in ${targetFile}`, fix: 'Fix the anchor or add a matching heading.' });
+  }
 
   function handle(ref, file, base, { page } = {}) {
     const raw = ref.value.trim();
     const loc = { file, line: ref.line, col: ref.col, url: raw, tag: ref.tag };
-    const what = ref.tag && ref.attr ? `<${ref.tag} ${ref.attr}="${raw}">` : raw;
+    const what = ref.tag && ref.attr && ref.tag !== 'md' ? `<${ref.tag} ${ref.attr}="${raw}">` : (ref.tag === 'md' ? `[](${raw})` : raw);
     if (!raw || SKIP_SCHEME.test(raw) || TEMPLATE.test(raw) || raw.startsWith('//#')) return;
     if (raw === '#' || raw.startsWith('#!') || raw.startsWith('#:~:')) return;
     if (isIgnored(raw)) return;
+    if (/\.(md|mdx)$/i.test(file)) {
+      const hashAt = raw.indexOf('#');
+      const pathPart = hashAt >= 0 ? raw.slice(0, hashAt) : raw;
+      const hash = hashAt >= 0 ? raw.slice(hashAt) : '';
+      if (!pathPart && hash) { mdFragmentCheck(file, hash, loc, what); return; }
+      if (pathPart && !/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(pathPart)) {
+        const resolved = resolveMarkdownTarget(pathPart, file, srcCwd);
+        if (resolved.kind === 'relative') {
+          const candidates = [resolved.relPath];
+          if (!/\.(md|mdx|html?)$/i.test(resolved.relPath)) candidates.push(`${resolved.relPath}.md`, `${resolved.relPath}.mdx`);
+          const hit = candidates.find((c) => sourceFiles.has(c));
+          let built = false;
+          if (!hit && dir) {
+            const slug = resolved.relPath.replace(/\.(md|mdx)$/i, '').replace(/^\.\//, '');
+            built = site.resolve(`/${slug.replace(/\\/g, '/')}`).ok;
+          }
+          if (!hit && !built) add({ ruleId: 'broken-link', ...loc, message: `${what} points at a missing file`, fix: 'Create the target or fix the path.' });
+          if (hash) mdFragmentCheck(hit || resolved.relPath, hash, loc, what);
+          return;
+        }
+      }
+    }
     if (file === '404.html' && page && !/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(raw) && !pages.get(file)?.base)
       add({ ruleId: 'relative-in-404', ...loc, message: `${what} is relative; 404.html is served at any path, so it resolves differently on /a/b/missing`, fix: `Use a root-relative URL: ${display(new URL(raw, base))}` });
     let u;
@@ -183,6 +232,10 @@ export async function check(options = {}) {
     add({ ruleId: 'missing-fragment', ...loc, message: `${what}: no id="${id}" in ${target}`, fix: best ? `did you mean #${best}?` : `Add id="${id}" to the target element or fix the anchor` });
   }
 
+  if (o.sources) {
+    await scanMarkdownSources({ cwd: srcCwd, patterns: o.sources === true ? true : o.sources, handle, ignoreFiles, stats, mdHeadings });
+  }
+
   for (const f of htmlFiles) {
     const p = pages.get(f);
     const pageUrl = new URL(site.urlFor(f), ORIGIN);
@@ -250,7 +303,14 @@ export async function check(options = {}) {
   findings.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : (a.line || 0) - (b.line || 0) || order[a.severity] - order[b.severity]));
   const counts = { error: 0, warn: 0, info: 0 };
   for (const f of findings) counts[f.severity] = (counts[f.severity] || 0) + 1;
-  return { dir: path.relative(process.cwd(), root) || '.', root, stats, findings, counts, options: { basePath, siteUrl: siteUrl?.href, trailingSlash, cleanUrls, external: !!o.external } };
+  return {
+    dir: root ? (path.relative(process.cwd(), root) || '.') : null,
+    root,
+    stats,
+    findings,
+    counts,
+    options: { basePath, siteUrl: siteUrl?.href, trailingSlash, cleanUrls, external: !!o.external, sources: !!o.sources },
+  };
 }
 
 /** true when any finding is at or above failOn ('error' | 'warn' | 'none'). */

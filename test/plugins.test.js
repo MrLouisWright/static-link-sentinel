@@ -61,7 +61,11 @@ test('webpack plugin (CJS require) reports compilation errors', async () => {
 
 test('package exports map resolves for import and require', async () => {
   const pkg = require('../package.json');
+  assert.equal(pkg.exports['.'].require, './dist/index.cjs');
+  assert.equal(pkg.exports['./vite'].require, './dist/vite.cjs');
   assert.equal(pkg.exports['./webpack'].require, './src/webpack.cjs');
-  const m = await import('static-link-sentinel').catch(() => null);
-  if (m) assert.equal(typeof m.check, 'function');
+  const cjs = require('../dist/index.cjs');
+  assert.equal(typeof cjs.check, 'function');
+  const m = await import('../src/index.js');
+  assert.equal(typeof m.check, 'function');
 });

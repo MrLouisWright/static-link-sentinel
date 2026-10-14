@@ -34,6 +34,7 @@ static-link-sentinel [dir] [options]      dir defaults to dist/build/out/public/
   -e, --external              Also check external links (HEAD, GET fallback)
       --concurrency <n>       Parallel external requests (default 8)
       --per-host <n>          Parallel requests per host (default 2)
+      --host-delay <ms>       Minimum gap between requests to one host (default 150)
       --timeout <ms>          Per-request timeout (default 10000)
       --retries <n>           Retries on timeout/5xx/429 (default 2)
       --user-agent <ua>       User-Agent for external requests
@@ -41,6 +42,7 @@ static-link-sentinel [dir] [options]      dir defaults to dist/build/out/public/
       --cache-file <file>     External result cache (default .link-cache.json)
       --cache-ttl <hours>     Cache lifetime (default 24)
       --no-cache              Don't read or write the cache
+      --sources [pattern...]  Also scan markdown/mdx under the project (default **/*.md, **/*.mdx)
   -i, --ignore <pattern>      Ignore matching URLs (glob, substring or re:regex; repeatable)
   -c, --config <file>         JSON config
       --fail-on <level>       error | warn | none (default error)
@@ -119,6 +121,7 @@ index.html
 | Web manifest | `icons`, `screenshots`, `shortcuts`, `start_url` |
 | `sitemap*.xml` | every `<loc>` (urlset and sitemap index) |
 | `robots.txt` | `Sitemap:` lines |
+| Markdown / MDX (`--sources`) | `[text](url)`, `![alt](url)`, reference links, `<https://…>`, inline HTML `<a href>`; `#heading` anchors vs `#` headings (code blocks skipped) |
 
 `mailto:`, `tel:`, `data:`, `javascript:` and similar schemes are skipped, as are template placeholders (`{{ }}`), HTML comments and the bodies of inline scripts.
 
@@ -162,7 +165,16 @@ Set any rule to `error`, `warn`, `info` or `off` in config.
 
 ## External links
 
-`--external` sends a `HEAD` request to each unique URL and falls back to `GET` when the server refuses `HEAD`. Redirects are followed by hand so every hop is recorded. Defaults: 8 requests in parallel, 2 per host with 150 ms between them, a 10 s timeout and 2 retries on timeouts, 5xx and 429 (`Retry-After` is honoured, capped at 5 s). Results go to `.link-cache.json` and stay valid for 24 h, so a CI rerun only fetches what changed. Timeouts and 5xx responses are not cached. LinkedIn, Twitter/X, Facebook, Instagram and t.co are skipped by default because they block bots. Add more with `--skip` / `externalSkipExtra`, or replace the list with `externalSkip`.
+`--external` sends a `HEAD` request to each unique URL and falls back to `GET` when the server refuses `HEAD`. Redirects are followed by hand so every hop is recorded. Defaults: 8 requests in parallel, 2 per host with `--host-delay` 150 ms between them, a 10 s timeout and 2 retries on timeouts, 5xx and 429 (exponential backoff; `Retry-After` is honoured, capped at 5 s). Results go to `.link-cache.json` and stay valid for 24 h, so a CI rerun only fetches what changed. Timeouts and 5xx responses are not cached. LinkedIn, Twitter/X, Facebook, Instagram and t.co are skipped by default because they block bots. Add more with `--skip` / `externalSkipExtra`, or replace the list with `externalSkip`.
+
+### Markdown before build
+
+```bash
+npx static-link-sentinel --sources docs content README.md
+npm run build && npx static-link-sentinel dist --sources docs
+```
+
+Relative links between `.md` files are checked on disk; root-relative URLs are checked against the build when a directory is passed. Combine with `--external` to validate outbound links in docs.
 
 To keep the cache between CI runs:
 
@@ -314,7 +326,14 @@ for (const f of report.findings) console.log(f.severity, f.ruleId, `${f.file}:${
 if (shouldFail(report, 'error')) process.exit(1);
 ```
 
-Also exported: `RULES`, `detectDir`, `checkExternal`, `classifyExternal`, `toJson`, `loadConfig`, `Site` (the URL→file resolver), `parseHtml`, `parseCss`, `parseSitemap`, `parseRobots`, `parseNetlifyRedirects`, `parseVercelConfig`, `levenshtein`. The hand-written types are in `src/index.d.ts`, `src/vite.d.ts` and `src/webpack.d.ts`.
+Also exported: `RULES`, `detectDir`, `checkExternal`, `classifyExternal`, `toJson`, `loadConfig`, `Site` (the URL→file resolver), `parseHtml`, `parseCss`, `parseMarkdown`, `parseSitemap`, `parseRobots`, `parseNetlifyRedirects`, `parseVercelConfig`, `levenshtein`, `listSourceFiles`. TypeScript declarations are generated into `dist/types/` (`npm run build`). CommonJS:
+
+```js
+const { check } = require('static-link-sentinel');
+const { staticLinkSentinel } = require('static-link-sentinel/vite');
+```
+
+Tests live under `test/` and run in [CI](.github/workflows/ci.yml) on Node 18, 20 and 22 (including `require()` smoke tests).
 
 ## Limitations
 

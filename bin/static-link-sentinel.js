@@ -16,6 +16,7 @@ Usage: static-link-sentinel [dir] [options]      dir defaults to dist/build/out/
   -e, --external              Also check external links (HEAD, GET fallback)
       --concurrency <n>       Parallel external requests (default 8)
       --per-host <n>          Parallel requests per host (default 2)
+      --host-delay <ms>       Minimum gap between requests to one host (default 150)
       --timeout <ms>          Per-request timeout (default 10000)
       --retries <n>           Retries on timeout/5xx/429 (default 2)
       --user-agent <ua>       User-Agent for external requests
@@ -23,6 +24,7 @@ Usage: static-link-sentinel [dir] [options]      dir defaults to dist/build/out/
       --cache-file <file>     External result cache (default .link-cache.json)
       --cache-ttl <hours>     Cache lifetime (default 24)
       --no-cache              Don't read or write the cache
+      --sources [pattern...]  Also scan markdown/mdx under the project (default **/*.md, **/*.mdx)
   -i, --ignore <pattern>      Ignore matching URLs (glob, substring or re:regex; repeatable)
   -c, --config <file>         JSON config (default .linkcheckrc.json / .static-link-sentinelrc.json /
                               static-link-sentinel.config.json / package.json "static-link-sentinel")
@@ -37,7 +39,7 @@ Usage: static-link-sentinel [dir] [options]      dir defaults to dist/build/out/
 Exit codes: 0 ok, 1 findings at or above --fail-on, 2 usage error.`;
 
 function parse(argv) {
-  const a = { ignore: [], skip: [] };
+  const a = { ignore: [], skip: [], sources: null };
   const take = (i, name) => { if (i + 1 >= argv.length) throw usage(`${name} needs a value`); return argv[i + 1]; };
   for (let i = 0; i < argv.length; i++) {
     let arg = argv[i], val;
@@ -55,6 +57,7 @@ function parse(argv) {
       case '-e': case '--external': a.external = true; break;
       case '--concurrency': a.concurrency = num(v(arg), arg); break;
       case '--per-host': a.perHost = num(v(arg), arg); break;
+      case '--host-delay': a.hostDelay = num(v(arg), arg); break;
       case '--timeout': a.timeout = num(v(arg), arg); break;
       case '--retries': a.retries = num(v(arg), arg); break;
       case '--user-agent': a.userAgent = v(arg); break;
@@ -62,6 +65,12 @@ function parse(argv) {
       case '--cache-file': a.cacheFile = v(arg); break;
       case '--cache-ttl': a.cacheTtl = num(v(arg), arg) * 3600e3; break;
       case '--no-cache': a.cache = false; break;
+      case '--sources': {
+        if (a.sources === null) a.sources = [];
+        while (i + 1 < argv.length && !argv[i + 1].startsWith('-')) a.sources.push(argv[++i]);
+        if (a.sources.length === 0) a.sources = true;
+        break;
+      }
       case '-i': case '--ignore': a.ignore.push(v(arg)); break;
       case '-c': case '--config': a.config = v(arg); break;
       case '--fail-on': a.failOn = v(arg); if (!['error', 'warn', 'none'].includes(a.failOn)) throw usage('--fail-on must be error, warn or none'); break;
@@ -88,7 +97,7 @@ async function main() {
   try {
     const { config } = await loadConfig(a.config);
     const opts = { ...config };
-    for (const k of ['dir', 'basePath', 'siteUrl', 'trailingSlash', 'cleanUrls', 'orphans', 'external', 'concurrency', 'perHost', 'timeout', 'retries', 'userAgent', 'cacheFile', 'cacheTtl', 'cache']) if (a[k] !== undefined) opts[k] = a[k];
+    for (const k of ['dir', 'basePath', 'siteUrl', 'trailingSlash', 'cleanUrls', 'orphans', 'external', 'concurrency', 'perHost', 'hostDelay', 'timeout', 'retries', 'userAgent', 'cacheFile', 'cacheTtl', 'cache', 'sources']) if (a[k] !== undefined && a[k] !== null) opts[k] = a[k];
     if (config.cacheTtlHours && a.cacheTtl === undefined) opts.cacheTtl = config.cacheTtlHours * 3600e3;
     opts.ignore = [...(config.ignore || []), ...a.ignore];
     opts.externalSkipExtra = [...(config.externalSkipExtra || []), ...a.skip];

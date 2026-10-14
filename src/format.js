@@ -8,7 +8,9 @@ export function pretty(report, { color = useColor(process.stdout), verbose = tru
   const { stats, findings, counts } = report;
   const lines = [];
   const ext = report.options?.external ? `, ${stats.externalChecked} external URL(s) checked${stats.cached ? ` (${stats.cached} cached)` : ''}` : stats.external ? `, ${stats.external} external link(s) not checked (use --external)` : '';
-  lines.push(dim(`static-link-sentinel: ${report.dir}/ ${stats.pages} page(s), ${stats.css} stylesheet(s), ${stats.files} file(s), ${stats.internal} internal reference(s)${ext}`));
+  const where = report.dir != null ? `${report.dir}/` : 'sources';
+  const md = stats.markdown ? `, ${stats.markdown} markdown file(s)` : '';
+  lines.push(dim(`static-link-sentinel: ${where} ${stats.pages} page(s), ${stats.css} stylesheet(s), ${stats.files} file(s)${md}, ${stats.internal} internal reference(s)${ext}`));
   const groups = new Map();
   for (const f of findings) { if (!groups.has(f.file)) groups.set(f.file, []); groups.get(f.file).push(f); }
   for (const [file, list] of groups) {
@@ -32,7 +34,8 @@ const mdEsc = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\n/g, '<br>'
 export function toMarkdown(report, { max = 300 } = {}) {
   const { stats, findings, counts } = report;
   const icon = counts.error ? '❌' : counts.warn ? '⚠️' : '✅';
-  const out = [`### ${icon} static-link-sentinel`, '', `**${counts.error} error(s)**, ${counts.warn} warning(s), ${counts.info} info · ${stats.pages} page(s), ${stats.internal} internal reference(s)${report.options?.external ? `, ${stats.externalChecked} external URL(s)` : ''} in \`${report.dir}/\``, ''];
+  const where = report.dir != null ? `\`${report.dir}/\`` : 'markdown sources';
+  const out = [`### ${icon} static-link-sentinel`, '', `**${counts.error} error(s)**, ${counts.warn} warning(s), ${counts.info} info · ${stats.pages} page(s), ${stats.internal} internal reference(s)${report.options?.external ? `, ${stats.externalChecked} external URL(s)` : ''}${stats.markdown ? `, ${stats.markdown} markdown file(s)` : ''} in ${where}`, ''];
   if (!findings.length) { out.push('No broken links or missing assets. 🎉'); return out.join('\n') + '\n'; }
   out.push('| | Rule | Location | Link | Details | Fix |', '|---|---|---|---|---|---|');
   const sym = { error: '✖', warn: '⚠', info: 'ℹ' };
@@ -44,7 +47,7 @@ export function toMarkdown(report, { max = 300 } = {}) {
 export function toSarif(report, { version = '1.0.0' } = {}) {
   const used = [...new Set(report.findings.map((f) => f.ruleId))];
   const level = { error: 'error', warn: 'warning', info: 'note' };
-  const prefix = report.dir === '.' ? '' : report.dir.replace(/\\/g, '/') + '/';
+  const prefix = report.dir == null ? '' : report.dir === '.' ? '' : report.dir.replace(/\\/g, '/') + '/';
   return {
     $schema: 'https://json.schemastore.org/sarif-2.1.0.json',
     version: '2.1.0',
