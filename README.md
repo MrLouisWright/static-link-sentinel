@@ -362,6 +362,10 @@ Then create a GitHub release from the new tag. `.github/workflows/release.yml` r
 - [form-honeypot-guard](https://www.npmjs.com/package/form-honeypot-guard): block form spam without a captcha.
 - **static-link-sentinel**: fail the build on broken links and missing assets.
 
+## Support
+
+If this project is useful to you, you can support its development with a donation: [Buy me a coffee](https://donate.stripe.com/aFa00lek3cvX4Ds2Fk9EI0b). It helps keep these tools maintained, documented and free for everyone.
+
 ## License
 
 MIT © Louis Wright ([Louis Wright](https://github.com/MrLouisWright))
