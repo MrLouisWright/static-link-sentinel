@@ -133,3 +133,40 @@ export function parseRobots(txt) {
   txt.split(/\r?\n/).forEach((l, i) => { const m = /^\s*sitemap\s*:\s*(\S+)/i.exec(l); if (m) out.push({ value: m[1], line: i + 1, col: 1 }); });
   return out;
 }
+
+const MD_BLANK = (s) => s.replace(/[^\n]/g, ' ');
+
+/** Extract links and images from Markdown / MDX (skips fenced and inline code). */
+export function parseMarkdown(md) {
+  const pos = lineIndex(md);
+  let t = md.replace(/<!--[\s\S]*?-->/g, MD_BLANK);
+  t = t.replace(/```[\s\S]*?```/g, MD_BLANK);
+  t = t.replace(/(`+)([^`\n]+?)\1/g, MD_BLANK);
+  const headings = new Set();
+  for (const m of t.matchAll(/^(#{1,6})\s+(.+?)\s*$/gm)) {
+    const slug = m[2].trim().toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (slug) headings.add(slug);
+  }
+  const defs = new Map();
+  for (const m of t.matchAll(/^\s*\[([^\]\n]+)\]:\s+<?([^>\s]+)>?(?:\s+["'][^"']*["'])?\s*$/gm)) {
+    defs.set(m[1].toLowerCase(), m[2]);
+  }
+  const refs = [];
+  const add = (value, index, kind = 'link', extra = {}) => {
+    if (!value?.trim()) return;
+    const p = pos(index);
+    refs.push({ value: value.trim(), kind, line: p.line, col: p.col, tag: 'md', attr: kind === 'asset' ? 'src' : 'href', ...extra });
+  };
+  for (const m of t.matchAll(/!?\[([^\]]*)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g)) {
+    add(m[2], m.index + m[0].indexOf('(') + 1, m[0].startsWith('!') ? 'asset' : 'link');
+  }
+  for (const m of t.matchAll(/!?\[([^\]]+)\]\[([^\]]+)\]/g)) {
+    const url = defs.get(m[2].toLowerCase());
+    if (url) add(url, m.index, m[0].startsWith('!') ? 'asset' : 'link');
+  }
+  for (const m of t.matchAll(/<((?:https?:\/\/|mailto:|tel:)[^>\s]+)>/gi)) add(m[1], m.index + 1, 'link');
+  for (const m of t.matchAll(/<a\s+[^>]*href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi)) {
+    add(m[2] ?? m[3] ?? m[4], m.index, 'link', { tag: 'a' });
+  }
+  return { refs, headings };
+}

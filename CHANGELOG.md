@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 (2026-10-14)
+
+- External links: document `--host-delay`; concurrency, per-host limits, exponential backoff, `Retry-After`, and TTL cache (`.link-cache.json`) unchanged but now covered by expanded tests.
+- **Markdown / MDX sources** before build: `--sources` (or `sources` in config) scans project markdown for broken relative links, root-relative paths (when a build dir is also checked), and missing `#heading` anchors.
+- **Dual package exports**: `require('static-link-sentinel')` and `require('static-link-sentinel/vite')` via CJS bundles in `dist/`; ESM remains `./src/*.js`.
+- TypeScript declarations are **generated** from JavaScript sources (`npm run build` → `dist/types/`).
+- CI runs `npm ci`, builds, tests `import` and `require`, and release still publishes with `npm publish --provenance`.
+
 ## 1.0.1 (2026-10-13)
 
 - CI: harden workflows (actions pinned to SHAs, least-privilege permissions, persist-credentials: false)

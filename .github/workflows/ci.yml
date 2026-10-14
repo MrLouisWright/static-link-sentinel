@@ -13,8 +13,11 @@ jobs:
         with: { persist-credentials: false }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: { node-version: '${{ matrix.node }}' }
+      - run: npm ci
       - run: npm test
       - run: npm pack --dry-run
+      - name: require() smoke test
+        run: node -e "const m=require('./dist/index.cjs'); m.check({dir:'test/fixtures/clean'}).then(r=>{if(r.findings.length)process.exit(1)})"
   action:
     runs-on: ubuntu-latest
     steps:

@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 
-export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (compatible; static-link-sentinel/1.0; +https://github.com/MrLouisWright/static-link-sentinel)';
+export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (compatible; static-link-sentinel/1.1; +https://github.com/MrLouisWright/static-link-sentinel)';
 export const DEFAULT_SKIP = ['linkedin.com', 'www.linkedin.com', 'twitter.com', 'x.com', 'facebook.com', 'www.facebook.com', 'instagram.com', 'www.instagram.com', 't.co'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

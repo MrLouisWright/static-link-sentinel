@@ -40,6 +40,12 @@ test('parseCss handles url(), @import, comments and data URIs', () => {
   assert.deepEqual(r.sort(), ['/f.woff2', 'base.css', 'reset.css']);
 });
 
+test('canonical and hreflang link rels are checked as links', () => {
+  const { refs } = parseHtml('<link rel="canonical" href="/c"><link rel="alternate" hreflang="de" href="/de/">');
+  assert.deepEqual(refs.map((r) => r.value), ['/c', '/de/']);
+  assert.ok(refs.every((r) => r.kind === 'link'));
+});
+
 test('srcset, entities, sitemap and robots', () => {
   assert.deepEqual(parseSrcset('a.png 1x,b.png 2x'), ['a.png', 'b.png']);
   assert.equal(decodeEntities('a&amp;b&#39;&#x41;'), "a&b'A");
