@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>static-link-sentinel · Fail CI on broken links before you deploy.</title>
+<meta name="description" content="Fail CI on broken links before you deploy. Crawls your built static site (dist/, build/, out/, public/, _site/) for broken internal links, missing assets, missing #anchors and paths whose letter case only works on macOS. With --external it checks outbound links for 404s and redirect chains, showing ">
+<meta name="theme-color" content="#07090c">
+<link rel="canonical" href="https://mrlouiswright.github.io/static-link-sentinel/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="static-link-sentinel: Fail CI on broken links before you deploy.">
+<meta property="og:description" content="Fail CI on broken links before you deploy. Crawls your built static site (dist/, build/, out/, public/, _site/) for broken internal links, missing assets, missing #anchors and paths whose letter case only works on macOS. With --external it checks outbound links for 404s and redirect chains, showing ">
+<meta property="og:url" content="https://mrlouiswright.github.io/static-link-sentinel/">
+<meta property="og:image" content="https://mrlouiswright.github.io/static-link-sentinel/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="static-link-sentinel: Fail CI on broken links before you deploy.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="static-link-sentinel">
+<meta name="twitter:description" content="Fail CI on broken links before you deploy.">
+<meta name="twitter:image" content="https://mrlouiswright.github.io/static-link-sentinel/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>:root{--accent:#a78bfa;--accent-2:#6d28d9}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="./"><span class="brand-g" aria-hidden="true">L</span>static-link-sentinel</a>
+    <nav aria-label="Primary"><ul>
+      <li><a href="#features">Features</a></li><li><a href="#usage">Usage</a></li><li><a href="#ci">CI</a></li><li><a href="#options">Options</a></li>
+      <li><a class="gh" href="https://github.com/MrLouisWright/static-link-sentinel">GitHub</a></li>
+    </ul></nav>
+  </div>
+</header>
+<main id="main">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> npm package · MIT · Node ≥ 18</p>
+      <h1>static-link-sentinel</h1>
+      <p class="tagline">Fail CI on broken links before you deploy.</p>
+      <p class="lede">Crawls your built static site (dist/, build/, out/, public/, _site/) for broken internal links, missing assets, missing #anchors and paths whose letter case only works on macOS. With --external it checks outbound links for 404s and redirect chains, showing every hop. No server needed: it resolves URLs the way Netlify, Vercel, GitHub Pages and Cloudflare Pages do.</p>
+      <div class="install">
+        <code id="install-cmd"><span class="prompt" aria-hidden="true">$</span> npm i -D static-link-sentinel</code>
+        <button class="copy" type="button" data-copy="npm i -D static-link-sentinel" aria-label="Copy install command">Copy</button>
+        <span class="sr-only" role="status" aria-live="polite" id="copy-status"></span>
+      </div>
+      <div class="ctas">
+        <a class="btn primary" href="https://github.com/MrLouisWright/static-link-sentinel#readme">Read the docs</a>
+        <a class="btn" href="https://www.npmjs.com/package/static-link-sentinel">View on npm</a>
+        <a class="btn" href="https://github.com/MrLouisWright/static-link-sentinel">Source on GitHub</a>
+      </div>
+      <div class="badges">
+        <a href="https://www.npmjs.com/package/static-link-sentinel"><img src="https://img.shields.io/npm/v/static-link-sentinel.svg?style=flat-square&amp;color=111" alt="npm version of static-link-sentinel" height="20"></a>
+        <a href="https://github.com/MrLouisWright/static-link-sentinel/actions/workflows/ci.yml"><img src="https://github.com/MrLouisWright/static-link-sentinel/actions/workflows/ci.yml/badge.svg" alt="CI status" height="20"></a>
+        <a href="https://github.com/MrLouisWright/static-link-sentinel/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License: MIT" height="20"></a>
+        <a href="https://github.com/MrLouisWright/static-link-sentinel"><img src="https://img.shields.io/github/stars/MrLouisWright/static-link-sentinel?style=flat-square" alt="GitHub stars for static-link-sentinel" height="20"></a>
+      </div>
+    </div>
+    <figure class="term" aria-label="Example terminal session running static-link-sentinel">
+      <div class="term-bar"><span></span><span></span><span></span><em>~/project — zsh</em></div>
+      <pre class="term-body" data-cmd="npx static-link-sentinel dist --site-url https://mysite.com --orphans"><span class="ln cmd"><span class="prompt">$</span> <span class="typed">npx static-link-sentinel dist --site-url https://mysite.com --orphans</span><span class="caret" aria-hidden="true"></span></span><span class="out"><span class="ln dim">static-link-sentinel: dist/ 5 page(s), 1 stylesheet(s), 13 file(s), 41 internal reference(s)</span><span class="ln dim">&nbsp;</span><span class="ln b">index.html</span><span class="ln e">  ✖ error Broken internal link [broken-link]  line 21</span><span class="ln dim">          &lt;a href=&quot;/blog/post-l/&quot;&gt; resolves to no file in the build (would serve 404.html)</span><span class="ln f">          fix: did you mean /blog/post-1/?</span><span class="ln e">  ✖ error Path case mismatch [case-mismatch]  line 22</span><span class="ln f">          fix: Use /blog/post-1/ or rename the file</span><span class="ln w">  ⚠ warn  Missing #fragment anchor [missing-fragment]  line 24</span><span class="ln f">          fix: did you mean #team?</span><span class="ln i">  ℹ info  Absolute link to own domain [absolute-internal]  line 31</span><span class="ln f">          fix: Use a relative link: /about</span></span></pre>
+      <figcaption class="sr-only">Sample output adapted from the static-link-sentinel README.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="sec" id="problem">
+  <div class="wrap narrow">
+    <h2><span class="h-idx">01</span> The problem</h2>
+    <p class="big">/img/Logo.png works on your Mac and 404s on the Linux CDN. A typo'd slug, a renamed heading anchor or a dead outbound link ships because nothing checks the built output.</p>
+    <p class="big">static-link-sentinel reads the files you are about to deploy, resolves every reference exactly like your host will, and fails CI with a fix line such as &quot;did you mean /blog/post-1/?&quot;.</p>
+  </div>
+</section>
+
+<section class="sec" id="features">
+  <div class="wrap">
+    <h2><span class="h-idx">02</span> Features</h2>
+    <div class="grid">
+      <article class="card"><span class="card-i" aria-hidden="true">01</span><h3>Internal links &amp; assets</h3><p>HTML, CSS url()/@import, web manifests, sitemap*.xml and robots.txt are all checked against the build.</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">02</span><h3>Case-mismatch detection</h3><p>Case-sensitive matching like Linux hosts, with a dedicated case-mismatch error instead of a silent pass.</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">03</span><h3>#anchor checks</h3><p>Missing fragments are reported with a &quot;did you mean&quot; suggestion.</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">04</span><h3>External links</h3><p>--external HEADs each unique URL with GET fallback, per-host throttling, retries and a 24 h cache, recording every redirect hop.</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">05</span><h3>Host-aware resolution</h3><p>Clean URLs, index.html, trailingSlash, basePath, Netlify _redirects and vercel.json.</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">06</span><h3>Markdown sources</h3><p>--sources checks links and #heading anchors in .md / .mdx before you even build.</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">07</span><h3>Reports for CI</h3><p>JSON, SARIF and Markdown output (great for job summaries and PR comments).</p></article>
+      <article class="card"><span class="card-i" aria-hidden="true">08</span><h3>Zero dependencies</h3><p>CLI, API, Vite and webpack plugins, and a GitHub Action. Node ≥ 18.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="usage">
+  <div class="wrap">
+    <h2><span class="h-idx">03</span> Usage</h2>
+    <div class="usage">
+      <div class="u"><p class="u-t"># Auto-detect the build dir</p><pre><code><span class="prompt" aria-hidden="true">$</span> npx static-link-sentinel</code></pre></div>
+      <div class="u"><p class="u-t"># Check external links too</p><pre><code><span class="prompt" aria-hidden="true">$</span> npx static-link-sentinel dist --external --site-url https://example.com</code></pre></div>
+      <div class="u"><p class="u-t"># GitHub Pages project site</p><pre><code><span class="prompt" aria-hidden="true">$</span> npx static-link-sentinel dist --base-path /my-repo</code></pre></div>
+      <div class="u"><p class="u-t"># Markdown before build</p><pre><code><span class="prompt" aria-hidden="true">$</span> npx static-link-sentinel --sources docs content README.md</code></pre></div>
+    </div>
+
+  </div>
+</section>
+
+<section class="sec" id="ci">
+  <div class="wrap">
+    <h2><span class="h-idx">04</span> CI / GitHub Action</h2>
+    <pre class="code yaml"><code>name: Links
+on: [push, pull_request]
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci &amp;&amp; npm run build
+      - uses: MrLouisWright/static-link-sentinel@v1
+        with:
+          dir: dist
+          site-url: https://example.com
+          external: ${{ github.event_name == 'push' }}
+          fail-on: error
+          sarif: links.sarif
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: links.sarif }</code></pre>
+  </div>
+</section>
+
+<section class="sec" id="options">
+  <div class="wrap">
+    <h2><span class="h-idx">05</span> Options &amp; flags</h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th scope="col">Flag</th><th scope="col">Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>-b, --base-path &lt;path&gt;</code></td><td>Site is served under a sub-path (e.g. /docs)</td></tr>
+        <tr><td><code>-s, --site-url &lt;url&gt;</code></td><td>Production URL: absolute links to it are checked as internal</td></tr>
+        <tr><td><code>--trailing-slash &lt;m&gt;</code></td><td>always | never | ignore (default: ignore, or vercel.json)</td></tr>
+        <tr><td><code>--clean-urls</code></td><td>Host serves /about for about.html</td></tr>
+        <tr><td><code>--orphans</code></td><td>Report pages no other page links to</td></tr>
+        <tr><td><code>-e, --external</code></td><td>Also check external links (HEAD, GET fallback)</td></tr>
+        <tr><td><code>--concurrency &lt;n&gt;</code></td><td>Parallel external requests (default 8)</td></tr>
+        <tr><td><code>--per-host &lt;n&gt;</code></td><td>Parallel requests per host (default 2)</td></tr>
+        <tr><td><code>--host-delay &lt;ms&gt;</code></td><td>Minimum gap between requests to one host (default 150)</td></tr>
+        <tr><td><code>--timeout &lt;ms&gt;</code></td><td>Per-request timeout (default 10000)</td></tr>
+        <tr><td><code>--retries &lt;n&gt;</code></td><td>Retries on timeout/5xx/429 (default 2)</td></tr>
+        <tr><td><code>--user-agent &lt;ua&gt;</code></td><td>User-Agent for external requests</td></tr>
+        <tr><td><code>--skip &lt;pattern&gt;</code></td><td>Don't fetch matching external URLs (repeatable)</td></tr>
+        <tr><td><code>--cache-file &lt;file&gt;</code></td><td>External result cache (default .link-cache.json)</td></tr>
+        <tr><td><code>--cache-ttl &lt;hours&gt;</code></td><td>Cache lifetime (default 24)</td></tr>
+        <tr><td><code>--no-cache</code></td><td>Don't read or write the cache</td></tr>
+        <tr><td><code>--sources [pattern...]</code></td><td>Also scan markdown/mdx under the project</td></tr>
+        <tr><td><code>-i, --ignore &lt;pattern&gt;</code></td><td>Ignore matching URLs (glob, substring or re:regex; repeatable)</td></tr>
+        <tr><td><code>-c, --config &lt;file&gt;</code></td><td>JSON config</td></tr>
+        <tr><td><code>--fail-on &lt;level&gt;</code></td><td>error | warn | none (default error)</td></tr>
+        <tr><td><code>--json</code></td><td>JSON report on stdout</td></tr>
+        <tr><td><code>--sarif [file]</code></td><td>SARIF 2.1.0 to stdout or file</td></tr>
+        <tr><td><code>--markdown [file]</code></td><td>Markdown summary to stdout or file</td></tr>
+        <tr><td><code>-q, --quiet</code></td><td>Hide info-level findings</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Full reference, config file format and API in the <a href="https://github.com/MrLouisWright/static-link-sentinel#readme">README</a>.</p>
+  </div>
+</section>
+
+<section class="sec more" id="more">
+  <div class="wrap">
+    <h2><span class="h-idx">06</span> More tools by Louis Wright</h2>
+    <div class="tools">
+<a class="tool" href="https://mrlouiswright.github.io/bundle-secret-guard/" style="--a:#f43f5e"><span class="tool-g" aria-hidden="true">S</span><span><strong>bundle-secret-guard</strong><small>Fail the build when secrets ship to the browser.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/cookie-sentinel/" style="--a:#fbbf24"><span class="tool-g" aria-hidden="true">K</span><span><strong>cookie-sentinel</strong><small>Audit the cookies your site sets before attackers do.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/csp-forge/" style="--a:#f59e0b"><span class="tool-g" aria-hidden="true">C</span><span><strong>csp-forge</strong><small>Generate a tight Content-Security-Policy from your built site.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/form-honeypot-guard/" style="--a:#a3e635"><span class="tool-g" aria-hidden="true">F</span><span><strong>form-honeypot-guard</strong><small>Block form spam bots without a captcha.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/header-sentinel/" style="--a:#22d3ee"><span class="tool-g" aria-hidden="true">H</span><span><strong>header-sentinel</strong><small>Fail CI when deployed URLs ship weak HTTP security headers.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/license-sentinel/" style="--a:#60a5fa"><span class="tool-g" aria-hidden="true">⚖</span><span><strong>license-sentinel</strong><small>A license compliance gate for npm projects, plus CycloneDX/SPDX SBOMs and a NOTICES file.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/package-tripwire/" style="--a:#fb923c"><span class="tool-g" aria-hidden="true">P</span><span><strong>package-tripwire</strong><small>Fail CI when dependency changes look suspicious.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/sri-sentinel/" style="--a:#34d399"><span class="tool-g" aria-hidden="true">I</span><span><strong>sri-sentinel</strong><small>Subresource Integrity for your built site: generate, write and check it in CI.</small></span></a>
+<a class="tool" href="https://mrlouiswright.github.io/workflow-sentinel/" style="--a:#2dd4bf"><span class="tool-g" aria-hidden="true">W</span><span><strong>workflow-sentinel</strong><small>Catch insecure GitHub Actions workflows before they're merged.</small></span></a>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="foot">
+  <div class="wrap foot-in">
+    <p>MIT © <a href="https://github.com/MrLouisWright">Louis Wright</a></p>
+    <p><a href="https://github.com/MrLouisWright/static-link-sentinel">GitHub</a> · <a href="https://www.npmjs.com/package/static-link-sentinel">npm</a> · <a href="https://github.com/MrLouisWright/static-link-sentinel#readme">README</a></p>
+  </div>
+</footer>
+<script src="app.js" defer></script>
+</body>
+</html>
