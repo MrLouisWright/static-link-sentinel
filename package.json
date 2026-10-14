@@ -1,6 +1,6 @@
 {
   "name": "static-link-sentinel",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Crawl a static build (dist/, build/, out/, public/, _site/) before deploy and fail CI on broken internal links, missing assets, case-mismatched paths, missing #anchors and dead or redirecting external links. CLI, API, Vite and webpack plugins, GitHub Action. Zero dependencies.",
   "type": "module",
   "main": "./dist/index.cjs",
