@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 - 2026-10-20
+
+- Release workflow installs dependencies before publishing.
+- Docs: README credit and support sections, blog images.
+- No changes to the package code.
+
 ## 1.1.0 (2026-10-14)
 
 - External links: document `--host-delay`; concurrency, per-host limits, exponential backoff, `Retry-After`, and TTL cache (`.link-cache.json`) unchanged but now covered by expanded tests.
